@@ -1,6 +1,6 @@
 # TypeSpeedApp
 
-Welcome to **TypeSpeedApp** – a fast and simple typing speed tester for Windows, macOS, and Linux!
+Welcome to **TypeSpeedApp** – a fast and simple typing speed tester for Windows!
 
 ---
 
@@ -22,33 +22,11 @@ Welcome to **TypeSpeedApp** – a fast and simple typing speed tester for Window
 2. Double-click the installer and follow the setup wizard.
 3. Once complete, launch **TypeSpeedApp** from the Start Menu or Desktop shortcut.
 
-### **macOS**
-
-1. Download the `TypeSpeedApp.dmg` (or `.pkg`) file.
-2. Open the file and drag **TypeSpeedApp** to your Applications folder (for `.dmg`), or follow the installer (for `.pkg`).
-3. Launch **TypeSpeedApp** from your Applications or Launchpad.
-
-> **Note:** If you see a warning about an unidentified developer, right-click the app, choose **Open**, and confirm.
-
-### **Linux**
-
-1. Download the `TypeSpeedApp.deb` (for Debian/Ubuntu) or `TypeSpeedApp.rpm` (for Fedora/RedHat) file.
-2. Install using your package manager or by double-clicking the file.
-    - **Debian/Ubuntu:**
-      ```sh
-      sudo dpkg -i TypeSpeedApp.deb
-      ```
-    - **Fedora/RedHat:**
-      ```sh
-      sudo rpm -i TypeSpeedApp.rpm
-      ```
-3. Launch **TypeSpeedApp** from your applications menu.
-
 ---
 
 ## ❗ No Java Required
 
-You **do not** need to install Java separately.  
+You **do NOT** need to install Java separately.  
 TypeSpeedApp comes with everything it needs to run – just install and start typing!
 
 ---
@@ -58,8 +36,6 @@ TypeSpeedApp comes with everything it needs to run – just install and start ty
 You can uninstall TypeSpeedApp like any other app:
 
 - **Windows:** Use "Add or Remove Programs" in Settings.
-- **macOS:** Move TypeSpeedApp to Trash, or use the Launchpad.
-- **Linux:** Use your package manager or software center.
 
 ---
 
