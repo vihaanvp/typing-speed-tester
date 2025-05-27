@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="TypeSpeedApp:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/TypeSpeedApp_jar</output-path>
+    <root id="archive" name="TypeSpeedApp.jar">
+      <element id="module-output" name="TypeSpeedApp.main" />
+      <element id="file-copy" path="$PROJECT_DIR$/lib/flatlaf-3.6.jar" />
+    </root>
+  </artifact>
+</component>

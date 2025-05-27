@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'me.vihaanvp'
+version = '1.0'
+
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+mainClassName = 'me.vihaanvp.typingspeedtester.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.formdev:flatlaf:3.4'
+}
+
+application {
+    mainClass = mainClassName
+}
+
+shadowJar {
+    manifest {
+        attributes(
+                'Main-Class': 'me.vihaanvp.typingspeedtester.Main'
+        )
+    }
+}
