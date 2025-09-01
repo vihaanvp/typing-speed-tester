@@ -4,6 +4,16 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# User data files
+highscores.txt
+settings.properties
+easy_sentences.txt
+medium_sentences.txt
+hard_sentences.txt
+
+# Release builds
+release/
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml

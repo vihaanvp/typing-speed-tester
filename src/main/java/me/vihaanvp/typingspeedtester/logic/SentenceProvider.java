@@ -1,5 +1,7 @@
 package me.vihaanvp.typingspeedtester.logic;
 
+import me.vihaanvp.typingspeedtester.model.PracticeMode;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
@@ -10,13 +12,16 @@ import java.util.List;
 public class SentenceProvider {
     private final Map<String, List<String>> inbuiltSentences;
     private final Map<String, List<String>> externalSentences;
+    private final Map<PracticeMode, List<String>> practiceContent;
     private final String[] difficulties = {"Easy", "Medium", "Hard"};
     private final String[] fileNames = {"easy_sentences.txt", "medium_sentences.txt", "hard_sentences.txt"};
 
     public SentenceProvider() {
         inbuiltSentences = new HashMap<>();
         externalSentences = new HashMap<>();
+        practiceContent = new HashMap<>();
         initInbuilt();
+        initPracticeContent();
         loadExternal();
     }
 
@@ -118,17 +123,98 @@ public class SentenceProvider {
         return lines;
     }
 
+    private void initPracticeContent() {
+        // Numbers practice
+        practiceContent.put(PracticeMode.NUMBERS, Arrays.asList(
+                "1234567890 0987654321 1122334455",
+                "Phone: 555-123-4567 or 555-987-6543",
+                "Years: 1995, 2000, 2010, 2023, 2024",
+                "Calculations: 123 + 456 = 579, 789 - 321 = 468",
+                "ID Numbers: 98765, 43210, 11223, 99887",
+                "Price: $123.45, $67.89, $999.99, $1,234.56",
+                "Coordinates: 40.7128, -74.0060 (New York)",
+                "Binary: 101010, 110011, 001100, 111000",
+                "Hex: A1B2C3, FF00AA, 123ABC, DEF456",
+                "Math: 2^10 = 1024, 3.14159, sqrt(144) = 12"
+        ));
+        
+        // Punctuation practice
+        practiceContent.put(PracticeMode.PUNCTUATION, Arrays.asList(
+                "Hello, world! How are you today? I'm fine, thanks.",
+                "Questions: What? When? Where? How? Why? Who?",
+                "Contractions: don't, won't, can't, shouldn't, wouldn't",
+                "Quotes: \"Hello,\" she said. 'This is important!'",
+                "Email: user@example.com, support@company.org",
+                "Special: #hashtag, @username, &amp;, 50% off!",
+                "Lists: (a) first, (b) second, (c) third item",
+                "Math: x + y = z; a > b; c < d; e == f",
+                "Coding: if (x > 0) { return true; } else { return false; }",
+                "Brackets: [array], {object}, (parentheses), <tags>"
+        ));
+        
+        // Programming practice
+        practiceContent.put(PracticeMode.PROGRAMMING, Arrays.asList(
+                "public static void main(String[] args) {",
+                "for (int i = 0; i < length; i++) {",
+                "if (condition == true && flag != false) {",
+                "private final List<String> items = new ArrayList<>();",
+                "try { process(); } catch (Exception e) { log.error(e); }",
+                "const result = await fetch('/api/data').then(res => res.json());",
+                "function calculateSum(a, b) { return a + b; }",
+                "SELECT * FROM users WHERE age > 18 ORDER BY name;",
+                "git commit -m \"Fix bug in user authentication module\"",
+                "docker run -p 8080:80 --name webapp nginx:latest"
+        ));
+        
+        // Famous quotes
+        practiceContent.put(PracticeMode.QUOTES, Arrays.asList(
+                "The only way to do great work is to love what you do. - Steve Jobs",
+                "Life is what happens to you while you're busy making other plans. - John Lennon",
+                "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
+                "It is during our darkest moments that we must focus to see the light. - Aristotle",
+                "The way to get started is to quit talking and begin doing. - Walt Disney",
+                "Your time is limited, so don't waste it living someone else's life. - Steve Jobs",
+                "If life were predictable it would cease to be life, and be without flavor. - Eleanor Roosevelt",
+                "If you look at what you have in life, you'll always have more. - Oprah Winfrey",
+                "If you set your goals ridiculously high and it's a failure, you will fail above everyone else's success. - James Cameron",
+                "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill"
+        ));
+    }
+
     public String getRandomSentence(String difficulty) {
+        return getRandomSentence(difficulty, PracticeMode.NORMAL);
+    }
+    
+    public String getRandomSentence(String difficulty, PracticeMode practiceMode) {
         List<String> pool = null;
+        
+        // Handle practice modes
+        if (practiceMode != PracticeMode.NORMAL && practiceMode != PracticeMode.CUSTOM) {
+            pool = practiceContent.get(practiceMode);
+            if (pool != null && !pool.isEmpty()) {
+                return getRandom(pool);
+            }
+        }
+        
+        // Handle custom mode
+        if (practiceMode == PracticeMode.CUSTOM) {
+            pool = externalSentences.getOrDefault(difficulty, Collections.emptyList());
+            if (pool != null && !pool.isEmpty()) return getRandom(pool);
+        }
+        
+        // Normal mode or fallback
         // Try external file for this difficulty
         pool = externalSentences.getOrDefault(difficulty, Collections.emptyList());
         if (pool != null && !pool.isEmpty()) return getRandom(pool);
+        
         // Fallback to inbuilt for this difficulty
         pool = inbuiltSentences.getOrDefault(difficulty, Collections.emptyList());
         if (pool != null && !pool.isEmpty()) return getRandom(pool);
+        
         // Fallback to inbuilt easy
         pool = inbuiltSentences.getOrDefault("Easy", Collections.emptyList());
         if (pool != null && !pool.isEmpty()) return getRandom(pool);
+        
         // Total fallback
         return "No sentences available.";
     }

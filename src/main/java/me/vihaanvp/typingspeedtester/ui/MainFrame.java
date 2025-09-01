@@ -2,8 +2,11 @@ package me.vihaanvp.typingspeedtester.ui;
 
 import me.vihaanvp.typingspeedtester.logic.HighScoreManager;
 import me.vihaanvp.typingspeedtester.logic.SentenceProvider;
+import me.vihaanvp.typingspeedtester.model.PracticeMode;
 import me.vihaanvp.typingspeedtester.model.TestResult;
+import me.vihaanvp.typingspeedtester.model.UserSettings;
 import me.vihaanvp.typingspeedtester.ui.ResultsDialog;
+import me.vihaanvp.typingspeedtester.ui.SettingsDialog;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -13,6 +16,7 @@ import java.awt.event.*;
 public class MainFrame extends JFrame {
     private JComboBox<String> difficultyBox;
     private JComboBox<TestResult.TestMode> testModeBox;
+    private JComboBox<PracticeMode> practiceModeBox;
     private JTextPane sentencePane;
     private JTextField inputField;
     private JLabel timerLabel, wpmLabel, accuracyLabel, errorLabel, progressLabel;
@@ -22,6 +26,7 @@ public class MainFrame extends JFrame {
 
     private final SentenceProvider sentenceProvider;
     private final HighScoreManager highScoreManager;
+    private final UserSettings userSettings;
     private String sentence = "";
     private long startTime = 0;
     private long pausedTime = 0;
@@ -30,6 +35,7 @@ public class MainFrame extends JFrame {
     private boolean paused = false;
     private Timer timer;
     private TestResult.TestMode currentTestMode;
+    private PracticeMode currentPracticeMode;
     private int testTimeLimit = -1; // -1 for no limit
 
     public MainFrame() {
@@ -37,13 +43,15 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
         setLocationRelativeTo(null);
-        setJMenuBar(createMenuBar());
 
         sentenceProvider = new SentenceProvider();
         highScoreManager = new HighScoreManager();
+        userSettings = new UserSettings();
 
+        setJMenuBar(createMenuBar());
         initComponents();
         updateHighScores();
+        applySettings();
     }
 
     private void initComponents() {
@@ -65,6 +73,19 @@ public class MainFrame extends JFrame {
             }
         });
         
+        practiceModeBox = new JComboBox<>(PracticeMode.values());
+        practiceModeBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, 
+                    boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof PracticeMode) {
+                    setText(((PracticeMode) value).getDisplayName());
+                }
+                return this;
+            }
+        });
+        
         startButton = new JButton("Start Test");
         pauseButton = new JButton("Pause");
         pauseButton.setEnabled(false);
@@ -74,6 +95,9 @@ public class MainFrame extends JFrame {
         topPanel.add(Box.createHorizontalStrut(10));
         topPanel.add(new JLabel("Test Mode:"));
         topPanel.add(testModeBox);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(new JLabel("Practice:"));
+        topPanel.add(practiceModeBox);
         topPanel.add(Box.createHorizontalStrut(10));
         topPanel.add(startButton);
         topPanel.add(pauseButton);
@@ -177,6 +201,7 @@ public class MainFrame extends JFrame {
 
     private void startTest() {
         currentTestMode = (TestResult.TestMode) testModeBox.getSelectedItem();
+        currentPracticeMode = (PracticeMode) practiceModeBox.getSelectedItem();
         testTimeLimit = currentTestMode.getTimeLimit();
         
         String difficulty = (String) difficultyBox.getSelectedItem();
@@ -186,11 +211,11 @@ public class MainFrame extends JFrame {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < 10; i++) { // Get enough sentences for time-based test
                 if (i > 0) sb.append(" ");
-                sb.append(sentenceProvider.getRandomSentence(difficulty));
+                sb.append(sentenceProvider.getRandomSentence(difficulty, currentPracticeMode));
             }
             sentence = sb.toString();
         } else {
-            sentence = sentenceProvider.getRandomSentence(difficulty);
+            sentence = sentenceProvider.getRandomSentence(difficulty, currentPracticeMode);
         }
         
         sentencePane.setText(sentence);
@@ -209,6 +234,7 @@ public class MainFrame extends JFrame {
         pauseButton.setEnabled(true);
         difficultyBox.setEnabled(false);
         testModeBox.setEnabled(false);
+        practiceModeBox.setEnabled(false);
         
         if (timer != null) timer.stop();
         
@@ -265,6 +291,7 @@ public class MainFrame extends JFrame {
         pauseButton.setText("Pause");
         difficultyBox.setEnabled(true);
         testModeBox.setEnabled(true);
+        practiceModeBox.setEnabled(true);
         
         progressBar.setValue(100);
         progressBar.setString("Test completed!");
@@ -319,6 +346,10 @@ public class MainFrame extends JFrame {
     }
 
     private void updateSentenceHighlight() {
+        if (!userSettings.isHighlightErrors()) {
+            return; // Don't highlight if user disabled it
+        }
+        
         String input = inputField.getText();
         StyledDocument doc = sentencePane.getStyledDocument();
         StyleContext sc = StyleContext.getDefaultStyleContext();
@@ -342,7 +373,11 @@ public class MainFrame extends JFrame {
         int accuracy = calcAccuracy();
         int errors = calcErrors();
         
-        wpmLabel.setText("WPM: " + wpm);
+        if (userSettings.isShowWpmInRealTime()) {
+            wpmLabel.setText("WPM: " + wpm);
+        } else {
+            wpmLabel.setText("WPM: --");
+        }
         accuracyLabel.setText("Accuracy: " + accuracy + "%");
         errorLabel.setText("Errors: " + errors);
         
@@ -389,7 +424,10 @@ public class MainFrame extends JFrame {
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
+        
+        // Options Menu
         JMenu optionsMenu = new JMenu("Options");
+        
         JMenuItem customSentences = new JMenuItem("Add Custom Sentences...");
         customSentences.addActionListener(e -> {
             // Open folder
@@ -397,8 +435,104 @@ public class MainFrame extends JFrame {
             // Show tutorial
             JOptionPane.showMessageDialog(this, SentenceProvider.getCustomSentenceTutorial(), "How to Add Custom Sentences", JOptionPane.INFORMATION_MESSAGE);
         });
+        
+        JMenuItem settings = new JMenuItem("Settings...");
+        settings.addActionListener(e -> {
+            SettingsDialog dialog = new SettingsDialog(this, userSettings);
+            dialog.setVisible(true);
+            if (!dialog.wasCancelled()) {
+                applySettings();
+            }
+        });
+        
+        JMenuItem exportResults = new JMenuItem("Export High Scores...");
+        exportResults.addActionListener(e -> exportHighScores());
+        
         optionsMenu.add(customSentences);
+        optionsMenu.addSeparator();
+        optionsMenu.add(settings);
+        optionsMenu.addSeparator();
+        optionsMenu.add(exportResults);
+        
+        // Help Menu
+        JMenu helpMenu = new JMenu("Help");
+        
+        JMenuItem about = new JMenuItem("About");
+        about.addActionListener(e -> showAbout());
+        
+        JMenuItem tips = new JMenuItem("Typing Tips");
+        tips.addActionListener(e -> showTypingTips());
+        
+        helpMenu.add(about);
+        helpMenu.add(tips);
+        
         menuBar.add(optionsMenu);
+        menuBar.add(helpMenu);
+        
         return menuBar;
+    }
+    
+    private void applySettings() {
+        // Apply font settings
+        Font font = new Font(userSettings.getFontFamily(), Font.PLAIN, userSettings.getFontSize());
+        sentencePane.setFont(font);
+        inputField.setFont(font);
+        
+        // Theme switching disabled for now - would require additional LAF dependencies
+        // TODO: Implement proper theme switching
+    }
+    
+    private void exportHighScores() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export High Scores");
+        fileChooser.setSelectedFile(new java.io.File("highscores_export.txt"));
+        
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(fileChooser.getSelectedFile())) {
+                writer.println("TypeSpeedApp High Scores Export");
+                writer.println("Generated: " + new java.util.Date());
+                writer.println("================================");
+                writer.println();
+                writer.print(highScoreManager.getHighScoresText());
+                JOptionPane.showMessageDialog(this, "High scores exported successfully!", "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+            } catch (java.io.IOException e) {
+                JOptionPane.showMessageDialog(this, "Error exporting high scores: " + e.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private void showAbout() {
+        String aboutText = "<html><h2>TypeSpeedApp</h2>" +
+                "<p>Version 1.0</p>" +
+                "<p>A comprehensive typing speed trainer with multiple practice modes.</p>" +
+                "<p><b>Features:</b></p>" +
+                "<ul>" +
+                "<li>Multiple test modes (completion and timed)</li>" +
+                "<li>Various practice modes (numbers, punctuation, programming, quotes)</li>" +
+                "<li>Customizable settings and themes</li>" +
+                "<li>High score tracking</li>" +
+                "<li>Offline operation</li>" +
+                "</ul>" +
+                "<p>© 2024 - TypeSpeedApp</p></html>";
+        
+        JOptionPane.showMessageDialog(this, aboutText, "About TypeSpeedApp", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    private void showTypingTips() {
+        String tipsText = "<html><h3>Typing Tips for Better Speed and Accuracy</h3>" +
+                "<ul>" +
+                "<li><b>Posture:</b> Sit up straight with feet flat on the floor</li>" +
+                "<li><b>Hand Position:</b> Keep wrists straight and hands relaxed</li>" +
+                "<li><b>Home Row:</b> Start with fingers on ASDF (left) and JKL; (right)</li>" +
+                "<li><b>Look Ahead:</b> Don't look at the keyboard, read ahead of what you're typing</li>" +
+                "<li><b>Rhythm:</b> Type at a steady pace rather than rushing</li>" +
+                "<li><b>Practice:</b> Regular short sessions are better than long cramming</li>" +
+                "<li><b>Accuracy First:</b> Focus on accuracy before speed - speed will follow</li>" +
+                "<li><b>Use All Fingers:</b> Each finger has its designated keys</li>" +
+                "<li><b>Rest:</b> Take breaks to avoid fatigue and injury</li>" +
+                "<li><b>Practice Weaknesses:</b> Use specific practice modes for problem areas</li>" +
+                "</ul></html>";
+        
+        JOptionPane.showMessageDialog(this, tipsText, "Typing Tips", JOptionPane.INFORMATION_MESSAGE);
     }
 }
